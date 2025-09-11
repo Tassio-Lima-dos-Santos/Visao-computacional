@@ -12,15 +12,15 @@ r_ref = 166
 g_ref = 32
 b_ref = 33
 
-delta = 20
+delta = 30
 
 R = I[:, :, 0]
 G = I[:, :, 1]
 B = I[:, :, 2]
 
-Mb = (B >= b_ref - delta) & (B <= b_ref + delta)
-Mg = (G >= g_ref - delta) & (G <= g_ref + delta)
-Mr = (R >= r_ref - delta) & (R <= r_ref + delta)
+Mb = (B >= (b_ref - delta)) & (B <= (b_ref + delta))
+Mg = (G >= (g_ref - delta)) & (G <= (g_ref + delta))
+Mr = (R >= (r_ref - delta)) & (R <= (r_ref + delta))
 
 M = Mb & Mg & Mr
 
