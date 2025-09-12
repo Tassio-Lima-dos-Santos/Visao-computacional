@@ -12,26 +12,28 @@ hist1 = cv2.calcHist([I1], [0], None, [256], [0,256])
 
 hist1 = hist1[:,0]
 
-# pdf (função de densidade de probabilidade)
+I2 = cv2.equalizeHist(I1)
 
-pdf = hist1/(I1.size)
+# # pdf (função de densidade de probabilidade)
 
-# função de distribuição acumulada
+# pdf = hist1/(I1.size)
 
-cdf = np.cumsum(pdf)
+# # função de distribuição acumulada
 
-# função de processamento/mapeamento 
+# cdf = np.cumsum(pdf)
 
-f = np.uint8(255*cdf)
+# # função de processamento/mapeamento 
 
-# Equalização de histograma
+# f = np.uint8(255*cdf)
 
-n_linhas, n_colunas = I1.shape
-I2 = np.zeros((n_linhas, n_colunas), np.uint8)
+# # Equalização de histograma
 
-for x in np.arange(0, n_colunas):
-    for y in np.arange(0, n_linhas):
-        I2[y, x] = f[I1[y, x]]
+# n_linhas, n_colunas = I1.shape
+# I2 = np.zeros((n_linhas, n_colunas), np.uint8)
+
+# for x in np.arange(0, n_colunas):
+#     for y in np.arange(0, n_linhas):
+#         I2[y, x] = f[I1[y, x]]
 
 # Histograma de I2
 
