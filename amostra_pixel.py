@@ -21,7 +21,7 @@ def click_event(event, x, y, flags, param):
 
 # ----------------------------------------------------------------------------
 # lê imagem de um arquivo
-I = cv2.imread('./Imagens/tomato_124.jpg')
+I = cv2.imread('lab01/Frame_01.png')
 
 # apresenta imagem na tela
 cv2.imshow('image', I)

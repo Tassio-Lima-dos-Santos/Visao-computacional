@@ -41,12 +41,22 @@ while ret:
     # Algoritmo de detecção de objetos
     # IMPLEMENTE O SEU CÓDIGO AQUI
 
+    # Variáveis que guardam cores de referência da bolinha, peguei 3 amostras diferentes
+    # As cores estão nos 3 formatos mais comuns, mas provavelmente será usado apenas BGR ou HSV
+    ref_color_BGR = [[84, 217, 191], [85, 219, 193], [86, 218, 192]]
+    ref_color_RGB = [[191, 217, 84], [193, 219, 85], [192, 218, 86]]
+    ref_color_HSV = [[36, 156, 217], [36, 156, 219], [36, 154, 218]]
+
+    # Cálculo da distância das cores da imagem para a referência
+    used_ref_color = ref_color_BGR[0]
+    distance_image = np.zeros((n_colunas, n_linhas), np.float32)
+
     # atualiza plot
     ax1.clear()
     ax1.imshow(cv2.cvtColor(I1, cv2.COLOR_BGR2RGB))
 
     ax2.clear()
-    ax2.imshow(I2, cmap='gray')
+    ax2.imshow(I1, cmap='gray')
     ax2.plot([n_colunas/2, n_colunas/2], [0, n_linhas-1], ':')
 
     '''ax3.clear()
