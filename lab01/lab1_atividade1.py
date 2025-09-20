@@ -41,6 +41,9 @@ while ret:
     # Algoritmo de detecção de objetos
     # IMPLEMENTE O SEU CÓDIGO AQUI
 
+    # Parâmetros do algoritmo
+    limiar_distancia = 45 # O limiar da limiarização global aplicada na imagem de distância
+
     # Variáveis que guardam cores de referência da bolinha, peguei 3 amostras diferentes
     # As cores estão nos 3 formatos mais comuns, mas provavelmente será usado apenas BGR ou HSV
     ref_color_BGR = [[84, 217, 191], [85, 219, 193], [86, 218, 192]]
@@ -49,14 +52,21 @@ while ret:
 
     # Cálculo da distância das cores da imagem para a referência
     used_ref_color = ref_color_BGR[0]
-    distance_image = np.zeros((n_colunas, n_linhas), np.float32)
+    distance_image = np.sqrt((np.float32(I1[:, :, 0]) - used_ref_color[0])**2 +\
+                            (np.float32(I1[:, :, 1]) - used_ref_color[1])**2 +\
+                            (np.float32(I1[:, :, 2]) - used_ref_color[2])**2)
+    
+    distance_image = np.uint8(distance_image)
+
+    # Limiarização
+    _, threshold_image = cv2.threshold(distance_image, limiar_distancia, 255, cv2.THRESH_BINARY_INV)
 
     # atualiza plot
     ax1.clear()
     ax1.imshow(cv2.cvtColor(I1, cv2.COLOR_BGR2RGB))
 
     ax2.clear()
-    ax2.imshow(I1, cmap='gray')
+    ax2.imshow(threshold_image, cmap='gray')
     ax2.plot([n_colunas/2, n_colunas/2], [0, n_linhas-1], ':')
 
     '''ax3.clear()
@@ -64,8 +74,7 @@ while ret:
     ax3.set_ylim([0, 260])
     ax3.set_xlim([0, ref_linha.size])
     ax3.set_title('Coluna central da\n imagem binária')'''
-
-    plt.pause(0.05)
+    plt.pause(0.001)
 
 print('Processo finalizado!')
 cv2.waitKey(0)
