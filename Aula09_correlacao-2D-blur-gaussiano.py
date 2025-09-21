@@ -1,7 +1,7 @@
 import cv2
 from matplotlib import pyplot as plt
 import numpy as np
-import visaoComputacional_parte4 as visco
+import visaoComputacional as visco
 
 I = cv2.imread('./Imagens/monalisa2.png', cv2.IMREAD_GRAYSCALE)
 plt.figure()

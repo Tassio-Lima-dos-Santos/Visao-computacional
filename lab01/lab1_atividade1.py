@@ -42,16 +42,10 @@ while ret:
     # IMPLEMENTE O SEU CÓDIGO AQUI
 
     # Parâmetros do algoritmo
+    used_ref_color = [84, 217, 191] # Cor de referência da bolinha para segmentação no formato BGR
     limiar_distancia = 45 # O limiar da limiarização global aplicada na imagem de distância
 
-    # Variáveis que guardam cores de referência da bolinha, peguei 3 amostras diferentes
-    # As cores estão nos 3 formatos mais comuns, mas provavelmente será usado apenas BGR ou HSV
-    ref_color_BGR = [[84, 217, 191], [85, 219, 193], [86, 218, 192]]
-    ref_color_RGB = [[191, 217, 84], [193, 219, 85], [192, 218, 86]]
-    ref_color_HSV = [[36, 156, 217], [36, 156, 219], [36, 154, 218]]
-
     # Cálculo da distância das cores da imagem para a referência
-    used_ref_color = ref_color_BGR[0]
     distance_image = np.sqrt((np.float32(I1[:, :, 0]) - used_ref_color[0])**2 +\
                             (np.float32(I1[:, :, 1]) - used_ref_color[1])**2 +\
                             (np.float32(I1[:, :, 2]) - used_ref_color[2])**2)
@@ -74,7 +68,7 @@ while ret:
     ax3.set_ylim([0, 260])
     ax3.set_xlim([0, ref_linha.size])
     ax3.set_title('Coluna central da\n imagem binária')'''
-    plt.pause(0.001)
+    plt.pause(0.05)
 
 print('Processo finalizado!')
 cv2.waitKey(0)
