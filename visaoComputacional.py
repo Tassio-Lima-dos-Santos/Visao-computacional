@@ -218,3 +218,87 @@ def escalaImagem(I, tipo_dst):
         I_scaled = np.uint8(255*I_scaled)
 
     return I_scaled
+
+def similaridade1(I1, I2, metrica):
+
+    I1 = np.float32(I1)/255
+    I2 = np.float32(I2)/255
+
+    if (metrica == 'SAD'):
+        sim = np.sum(np.abs(I1 - I2))
+    else:
+        sim = np.float32('nan')
+
+    return sim
+
+def template_matching1(I, template, metrica):
+
+    M_imagem, N_imagem = I.shape
+    M_template,N_template = template.shape
+
+    I_similaridade = np.zeros((M_imagem-M_template+1, N_imagem-N_template+1), np.float32)
+
+    for y in np.arange(0, M_imagem-M_template+1):
+        for x in np.arange(0, N_imagem-N_template+1):
+            janela = I[y:y+M_template, x:x+N_template]
+            I_similaridade[y,x] = similaridade1(janela, template, metrica)
+
+    return I_similaridade
+
+def imreconstruction(Mask, Marker):
+
+    # Operação morfológica de reconstrução
+    num_pixels_brancos = 0
+    kernel = np.ones((3,3), np.float32)
+
+    # critério de parada: quando não houver mais alteração na imagem Marker
+    while num_pixels_brancos != np.sum(Marker):
+        num_pixels_brancos = np.sum(Marker)
+        Marker = cv2.dilate(Marker, kernel, iterations=1)
+        Marker = cv2.bitwise_and(Mask, Marker)
+
+    return Marker
+
+def imfill(I):
+
+    # Imagem máscara
+    Mask = 255 - I
+
+    # Imagem semente
+    Marker = Mask.copy()
+    Marker[1:-1,1:-1] = 0
+
+    # Operação morfológica de reconstrução
+    I2 = imreconstruction(Mask, Marker)
+    I3 = 255 - I2
+
+    return I3
+
+def imclearboard(I):
+
+    # imagem Marker
+    Marker = I.copy()
+    Marker[1:-1,1:-1] = 0
+
+    I2 = imreconstruction(I, Marker)
+    I3 = I - I2
+    
+    return I3
+
+def color_segmentation(I, ref_color, limiar):
+
+    n_linhas, n_colunas, n_camadas = I.shape
+
+    Ref = np.zeros((n_linhas, n_colunas, n_camadas), np.float32)
+    Ref[:,:,0] = ref_color[0]
+    Ref[:,:,1] = ref_color[1]
+    Ref[:,:,2] = ref_color[2]
+
+    D = np.sqrt(np.sum((np.float32(I) - Ref)**2, axis=2))
+
+    I_bin = np.zeros((n_linhas, n_colunas), np.uint8)
+    I_bin[D <= limiar] = 255
+
+    return I_bin
+
+    
