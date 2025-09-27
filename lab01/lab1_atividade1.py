@@ -32,11 +32,16 @@ tau = 80                               # limiar de distância em intensidade
 obj_count = 0
 prev_value = 0   # valor anterior da soma da coluna central
 
+# Variáveis da medição de tempo de processamento
+frames = 0
+sum_process_time = 0
+
 while True:
     ret, I1 = cap.read()
     if not ret:
         break
 
+    t1 = cv2.getTickCount()
     # 1) Cálculo da imagem de distância
     B, G, R = cv2.split(I1.astype(np.float32))
     D = np.sqrt((B - b_ref)**2 + (G - g_ref)**2 + (R - r_ref)**2)
@@ -53,6 +58,11 @@ while True:
     if soma_coluna > 10 and prev_value <= 10:
         obj_count += 1
     prev_value = soma_coluna
+
+    # Medição do tempo de processamento
+    t2 = cv2.getTickCount()
+    sum_process_time += (t2 - t1) / cv2.getTickFrequency()
+    frames += 1
 
     # Atualização dos gráficos
     ax1.clear()
@@ -73,5 +83,6 @@ while True:
     plt.pause(0.05)
 
 print(f'Processo finalizado! Total de bolas detectadas: {obj_count}')
+print(f'Tempo médio de processamento de frame: {(sum_process_time/frames):.6f} segundos')
 cap.release()
 cv2.destroyAllWindows()
