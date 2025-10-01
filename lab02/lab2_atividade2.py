@@ -64,7 +64,6 @@ def CannyBorderDetection(I_input, sigma):
 
     # Quinta Etapa
 
-
     return I_output
 
 # ----------------------------------------------------------
