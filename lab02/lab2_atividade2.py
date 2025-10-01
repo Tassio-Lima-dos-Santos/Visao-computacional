@@ -4,7 +4,7 @@ import numpy as np
 import visaoComputacional as visco
 
 # Algoritmo de Canny
-def CannyBorderDetection(I_input, sigma):
+def CannyBorderDetection(I_input, sigma, limiar_1, limiar_2):
 
     n_linhas, n_colunas = I_input.shape
 
@@ -32,10 +32,10 @@ def CannyBorderDetection(I_input, sigma):
     # Terceira Etapa
 
     # Etapa 3.a
-    Gs = np.zeros(I_blur.shape, np.float32)
+    Gn = np.zeros(I_blur.shape, np.float32)
 
-    for v in np.arange(1, n_colunas):
-        for u in np.arange(1, n_linhas): # Os loops for começam em 1 para ignorar a borda da imagem
+    for v in np.arange(1, n_colunas-1):
+        for u in np.arange(1, n_linhas-1): # Os loops for começam em 1 para ignorar a borda da imagem
             # Etapa 3.b
             theta = I_gradient_angle[u,v]
 
@@ -60,9 +60,41 @@ def CannyBorderDetection(I_input, sigma):
                     comp_pixels = [I_gradient_length[u,v-1], I_gradient_length[u,v+1]]
                     pass
 
+            # Etapa 3.d
+            if (I_gradient_length[u,v] >= comp_pixels[0] and I_gradient_length[u,v] >= comp_pixels[1]):
+                Gn[u,v] = I_gradient_length[u,v]
+
     # Quarta Etapa
 
+    # Etapa 4.a
+    tau_h = np.max((limiar_1, limiar_2))
+    tau_l = np.min((limiar_1, limiar_2))
+
+    # Etapa 4.b
+    Gnh = Gn >= tau_h
+    Gnl = Gn >= tau_l
+
+    # Etapa 4.c
+    Gnl = np.uint8(Gnl) - np.uint8(Gnh)
+
     # Quinta Etapa
+
+    Gnl_temp = np.zeros((Gnl.shape),np.uint8)
+
+    # Etapa 5.a
+    for v in np.arange(1, n_colunas-1):
+        for u in np.arange(1, n_linhas-1): # Os loops for começam em 1 para ignorar a borda da imagem
+            # Etapa 5.b
+            if(Gnh[u,v]):
+                # Etapa 5.c
+                Gnl_temp[u-1:u+1,v-1:v+1] = Gnl[u-1:u+1,v-1:v+1]
+            continue
+
+    # Etapa 5.d
+    Gnl = Gnl_temp
+
+    # Etapa 5.e
+    I_output = Gnh + Gnl
 
     return I_output
 
@@ -70,12 +102,12 @@ def CannyBorderDetection(I_input, sigma):
 # Carregamento da imagem de entrada
 I_input = cv2.imread('./lab02/castle.jpg', cv2.IMREAD_GRAYSCALE)
 
-I_output = CannyBorderDetection(I_input, 2)
+I_output = CannyBorderDetection(I_input, 2, 50, 120)
 
 # Criação das figuras
 fig = plt.figure()
-ax1 = fig.add_subplot(1,3,1)
-ax2 = fig.add_subplot(1,3,2)
+ax1 = fig.add_subplot(1,2,1)
+ax2 = fig.add_subplot(1,2,2)
 
 # Exibição das imagens
 ax1.imshow(I_input, cmap='gray')
