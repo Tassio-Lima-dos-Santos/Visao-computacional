@@ -16,7 +16,7 @@ Ix = cv2.filter2D(I1, cv2.CV_32F, Kx, borderType=cv2.BORDER_REFLECT101)
 # plt.imshow(Ix, cmap='gray')
 # cv2.imshow('Imagem derivada parcial de x', Ix)
 
-# Kernel da derivada parcial de x
+# Kernel da derivada parcial de y
 Ky = np.transpose(Kx)
 print(Ky)
 Iy = cv2.filter2D(I1, cv2.CV_32F, Ky, borderType=cv2.BORDER_REFLECT101)
