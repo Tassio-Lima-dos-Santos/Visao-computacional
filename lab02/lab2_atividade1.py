@@ -2,25 +2,69 @@ import cv2
 from matplotlib import pyplot as plt
 import numpy as np
 
-def filter2D_pixelwise(image, kernel, coords):
-    blurred_pixel = [0,0,0]
-    window_dim = kernel.shape
-    y,x = coords
-    for u in np.arange(0, window_dim[0]):
-        for v in np.arange(0, window_dim[1]):
-            current_coords = (np.uint((y+u) - (window_dim[0]-1)/2), np.uint((x+v) - (window_dim[0]-1)/2))
-            blurred_pixel += (image[current_coords])*kernel[u, v]
-    return blurred_pixel
-
 # Parâmetros do algoritmo de suavização
 tattoo_region = [[70, 227],[607, 462]] # Um array que define a região retangular que será suavizada
                       # É definida pelos pixels superior esquerdo e inferior direito
 
-border_tau = [150, 40]
+border_tau = [180, 5] # Os valores de limiar usados na detecção de borda
 
-window_dimension = (3,29) # Tamanho da janela quadrada da filtragem 2d
+S = cv2.getStructuringElement(cv2.MORPH_RECT, (7,7)) # Elemento estruturante da dilatação da borda
 
-kernel = np.ones(window_dimension, np.float32)/(window_dimension[0]*window_dimension[1]) # Define o kernel da filtragem 2d
+filter_w_dim = (3,3) # Tamanho da janela quadrada da filtragem 2d
+
+def filter2D_pixelwise(image, kernel, coords):
+    # Garante que o kernel seja float
+    kernel = np.array(kernel, dtype=np.float32)
+
+    # Pega dimensões
+    k_height, k_width = kernel.shape
+    pad_y = k_height // 2
+    pad_x = k_width // 2
+
+    # Determina o pixel que vai sofrer a transformação
+    y, x = coords
+
+    # Extrai a vizinhança
+    region = image[
+        y - pad_y : y + pad_y + 1,
+        x - pad_x : x + pad_x + 1
+        ]
+
+    # Multiplica pelo kernel e soma para cada camada de cor
+    transformed_pixel = np.zeros_like(image[y,x])
+    for i in range(3):
+        transformed_pixel[i] = np.sum(region[:,:,i] * kernel)
+
+    return transformed_pixel
+
+def mask_normal_kernel(mask, dimension, coords):
+    # Pega dimensões do kernel
+    k_height, k_width = dimension
+    pad_y = k_height // 2
+    pad_x = k_width // 2
+
+    # Determina a posição na máscara que vai determinar o kernel
+    y, x = coords
+
+    # O kernel é determinado a partir da região determinada da máscara
+    kernel = mask[
+        y - pad_y : y + pad_y + 1,
+        x - pad_x : x + pad_x + 1
+        ]
+
+    # Converte kernel para float32
+    kernel = np.float32(kernel)
+
+    # Caso todos os pixels da região determinada da máscara forem pixels de tatuagem
+    # O kernel é recalculado com uma janela maior 
+    if (np.sum(kernel) == 0):
+        kernel = mask_normal_kernel(mask, (k_height+2,k_width+2), coords)
+
+    else:
+        # Normaliza o kernel pra soma = 1
+        kernel /= np.sum(kernel)
+
+    return kernel
 
 # Carregamento da imagem de entrada
 I_input = cv2.imread('./lab02/Tatoo1.jpg')
@@ -34,32 +78,34 @@ ax2 = fig.add_subplot(1,2,2)
 # Algoritmo de suavização
 
 # Isolamento da região de interesse que se deseja suavizar
-I_tattoo = I_input[tattoo_region[0][0]:tattoo_region[1][0], tattoo_region[0][1]:tattoo_region[1][1]]
+I_output = I_input.copy()
+I_tattoo = I_output[tattoo_region[0][0]:tattoo_region[1][0], tattoo_region[0][1]:tattoo_region[1][1]]
 
-# Detecção de bordas
+# Detecção de bordas mais dilatação das bordas
 I_border = cv2.Canny(I_tattoo, border_tau[0], border_tau[1])
+I_border = cv2.morphologyEx(I_border, cv2.MORPH_DILATE, S)
+I_border = cv2.morphologyEx(I_border, cv2.MORPH_CLOSE, S)
+
+# Criação da máscara que mostra onde há pele
+I_skin = cv2.bitwise_not(I_border)
 
 # Aplicação da suavização nas regiões de borda
 I_tattoo_lines, I_tattoo_columns, _ = I_tattoo.shape
-for y in np.arange(1, I_tattoo_lines-1):
-    for x in np.arange(1, I_tattoo_columns-1):
-        blur_pixel = False
-        for u in np.arange(-1,2):
-            for v in np.arange(-1,2):
-                blur_pixel = blur_pixel or I_border[y+u,x+v]
-        if blur_pixel:
-            I_tattoo[y,x] = filter2D_pixelwise(I_tattoo, kernel, (y,x))
 
-I_output = I_tattoo
+for y in np.arange(0, I_tattoo_lines):
+    for x in np.arange(0, I_tattoo_columns):
+        if I_border[y,x]:
+            kernel = mask_normal_kernel(I_skin, filter_w_dim, (y,x))
+            I_tattoo[y,x] = filter2D_pixelwise(I_tattoo, kernel, (y,x))
 
 # Exibição das imagens
 ax1.imshow(cv2.cvtColor(I_input, cv2.COLOR_BGR2RGB))
 ax1.set_title('Imagem original')
 
-ax2.imshow(I_border, cmap='gray')
-ax2.set_title('Imagem de borda')
+# ax2.imshow(I_border, cmap='gray')
+# ax2.set_title('Imagem de borda')
 
-# ax2.imshow(cv2.cvtColor(I_output, cv2.COLOR_BGR2RGB))
-# ax2.set_title('Imagem suavizada')
+ax2.imshow(cv2.cvtColor(I_output, cv2.COLOR_BGR2RGB))
+ax2.set_title('Imagem suavizada')
 
 plt.show()
