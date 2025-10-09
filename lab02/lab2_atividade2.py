@@ -87,7 +87,7 @@ def CannyBorderDetection(I_input, sigma, limiar_1, limiar_2):
             # Etapa 5.b
             if(Gnh[u,v]):
                 # Etapa 5.c
-                Gnl_temp[u-1:u+1,v-1:v+1] = Gnl[u-1:u+1,v-1:v+1]
+                Gnl_temp[u-1:u+2,v-1:v+2] = Gnl[u-1:u+2,v-1:v+2]
             continue
 
     # Etapa 5.d
