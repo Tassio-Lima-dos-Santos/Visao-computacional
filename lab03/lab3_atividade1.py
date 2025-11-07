@@ -5,7 +5,6 @@ import visaoComputacional as visco
 
 # Parâmetros do código
 imagem_entrada = './lab03/banco_de_imagens/im8.png'
-porcentagem_de_matches_usados = 1
 
 def upq(I, p, q):
 
@@ -137,7 +136,7 @@ I_input = cv2.imread(imagem_entrada)
 plt.figure()
 plt.imshow(cv2.cvtColor(I_input, cv2.COLOR_BGR2RGB))
 
-# Detecção dos pontos do canto da etiqueta
+# AJUSTE DA PERSPECTIVA
 
 # Conversão das imagens coloridas para cinza
 I_input_gray = cv2.cvtColor(I_input, cv2.COLOR_BGR2GRAY)
@@ -147,33 +146,29 @@ I_reference_gray = cv2.cvtColor(I_reference, cv2.COLOR_BGR2GRAY)
 _, I_input_thresh = cv2.threshold(I_input_gray, 200, 255, cv2.THRESH_BINARY_INV)
 _, I_reference_thresh = cv2.threshold(I_reference_gray, 200, 255, cv2.THRESH_BINARY_INV)
 
+# Análise das características de região
 info_input = analisaRegioes(I_input_thresh)
-info_reference = analisaRegioes(I_reference_thresh)
 
-I_input_frame = info_input[0]['imagem']
-
+# Ajuste do ângulo da etiqueta
 n_linhas, n_colunas, _ = I_input.shape
 
-# Transformação de rotação
-# 0.3171218795127951
+# Orientar a imagem de forma que o ângulo da etiqueta seja 0.15 graus
 theta = -info_input[0]['orientacao'] - 0.15
 theta_rad = np.deg2rad(theta)
 dx = n_linhas*np.sin(theta_rad)
-
 A = np.array([[np.cos(theta_rad),-np.sin(theta_rad),dx], \
               [np.sin(theta_rad),np.cos(theta_rad),0]], \
               np.float32)
-
 n_linhas_final = int(n_colunas*np.sin(theta_rad) + n_linhas*np.cos(theta_rad))
 n_colunas_final = int(n_linhas*np.sin(theta_rad) + n_colunas*np.cos(theta_rad))
-
 I_input = cv2.warpAffine(I_input, A, (n_colunas_final, n_linhas_final))
 
+# Redimensionar a imagem para o tamanho original
 x1, y1 = np.abs(int((n_colunas_final-n_colunas)/2)), np.abs(int((n_linhas_final-n_linhas)/2))
 x2, y2 = int(n_colunas_final-x1), int(n_linhas_final-y1)
-
 I_input = I_input[y1:y2, x1:x2]
 
+# Ajuste de perspectiva usando o detector e descritor SIFT
 # Instancia o detector e descritor SIFT
 sift = cv2.SIFT_create()
 
@@ -189,18 +184,13 @@ matches = bf.match(desc_input, desc_reference)
 
 # Ordena os matches pela menor distância
 matches = sorted(matches, key = lambda x:x.distance)
-N = int(len(matches)*porcentagem_de_matches_usados)
-
-# # Desenha matches
-# I3 = cv2.drawMatches(I_input, kp_input, I_reference, kp_reference, matches[:N], None, flags = cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
-# plt.figure()
-# plt.imshow(cv2.cvtColor(I3, cv2.COLOR_BGR2RGB))
+N = len(matches)
 
 # Obter matriz de homografia que mapeia a imagem de entrada na imagem de referência
 src_pts = np.zeros((N, 1, 2), np.float32)
 dst_pts = np.zeros((N, 1, 2), np.float32)
 
-for i, match in enumerate(matches[:N]):
+for i, match in enumerate(matches):
     src_pts[i] = np.float32(kp_input[match.queryIdx].pt).reshape(-1, 1, 2)
     dst_pts[i] = np.float32(kp_reference[match.trainIdx].pt).reshape(-1, 1, 2)
 
@@ -210,9 +200,6 @@ M, mask = cv2.findHomography(src_pts, dst_pts, method=cv2.RANSAC)
 height, width, _ = I_reference.shape
 
 I_ajusted_input = cv2.warpPerspective(I_input, M, (width, height))
-
-# plt.figure()
-# plt.imshow(cv2.cvtColor(I_ajusted_input, cv2.COLOR_BGR2RGB))
 
 # Leitura do texto
 # --- 1. Extrair os Templates das Letras ---
@@ -228,6 +215,7 @@ def carregar_e_processar_imagem(caminho_arquivo):
 caminho_template = './lab03/banco_de_imagens/template_letras.png'
 _, template_thresh = carregar_e_processar_imagem(caminho_template)
 
+# Criação do alfabeto
 contours_template, _ = cv2.findContours(template_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 alphabet = "ABCDEFGHIJKLMNOPQRSTUVXZW"
 templates = {}
@@ -236,6 +224,7 @@ contours_template = sorted(contours_template, key=lambda c: cv2.boundingRect(c)[
 if len(contours_template) != len(alphabet):
     print(f"Aviso: Encontrados {len(contours_template)} contornos no template, mas o alfabeto tem {len(alphabet)} letras.")
 
+# Isolamento da região de interesse das letras
 for i, contour in enumerate(contours_template):
     if i >= len(alphabet):
         break
@@ -246,14 +235,12 @@ for i, contour in enumerate(contours_template):
 
 
 # --- 2. Reconhecer os Caracteres na Imagem de Origem ---
+
+# Leitura e tratamento da imagem lida
 source_img_color = I_ajusted_input
 source_img_gray = cv2.cvtColor(source_img_color, cv2.COLOR_BGR2GRAY) 
 _, source_thresh = cv2.threshold(source_img_gray, 127, 255, cv2.THRESH_BINARY_INV)
-
 source_thresh = visco.imclearboard(source_thresh)
-
-plt.figure()
-plt.imshow(source_thresh, cmap='gray')
 
 contours_source, _ = cv2.findContours(source_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -293,7 +280,7 @@ for char_info in found_chars:
     is_frame = (h/float(w) > 10)
     
     if is_colon_dot or is_frame:
-        continue # Ignora os dois-pontos
+        continue # Ignora os dois-pontos e as barras do contornos
     else:
         scores = []
         for letter, template_roi in templates.items():
