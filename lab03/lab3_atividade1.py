@@ -4,7 +4,7 @@ import numpy as np
 import visaoComputacional as visco
 
 # Parâmetros do código
-imagem_entrada = './lab03/banco_de_imagens/im8.png'
+imagem_entrada = './lab03/banco_de_imagens/im7.png'
 
 def upq(I, p, q):
 
