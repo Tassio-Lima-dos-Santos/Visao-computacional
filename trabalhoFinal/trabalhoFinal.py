@@ -3,15 +3,45 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 # Parâmetros do algoritmo
-imagem_de_entrada = './trabalhoFinal/banco_de_imagens/nível 1/placa3.jpg'
+imagem_de_entrada = './trabalhoFinal/banco_de_imagens/nível 1/placa2.jpg'
 
 # Inicialização das imagens
 I_input = cv2.imread(imagem_de_entrada)
 I_reference = cv2.imread('./trabalhoFinal/banco_de_imagens/nível 1/placa1.jpg')
 I_template = cv2.imread('./trabalhoFinal/banco_de_imagens/fonte_mercosul.png')
 
-# Ajuste da Imagem de Entrada
-I_ajusted = I_input
+# Ajuste de perspectiva usando o detector e descritor SIFT
+# Instancia o detector e descritor SIFT
+sift = cv2.SIFT_create()
+
+# Acha os pontos de interesses e seus descritores das imagens de referência e entrada
+kp_reference, desc_reference = sift.detectAndCompute(I_reference, None)
+kp_input, desc_input = sift.detectAndCompute(I_input, None)
+
+# Cria objeto BFMatcher
+bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=False)
+
+# Executa o match entre os descritores da imagem de referência e de entrada
+matches = bf.match(desc_input, desc_reference)
+
+# Ordena os matches pela menor distância
+matches = sorted(matches, key = lambda x:x.distance)
+N = len(matches)
+
+# Obter matriz de homografia que mapeia a imagem de entrada na imagem de referência
+src_pts = np.zeros((N, 1, 2), np.float32)
+dst_pts = np.zeros((N, 1, 2), np.float32)
+
+for i, match in enumerate(matches):
+    src_pts[i] = np.float32(kp_input[match.queryIdx].pt).reshape(-1, 1, 2)
+    dst_pts[i] = np.float32(kp_reference[match.trainIdx].pt).reshape(-1, 1, 2)
+
+# Matriz de homografia
+M, mask = cv2.findHomography(src_pts, dst_pts, method=cv2.RANSAC)
+
+height, width, _ = I_reference.shape
+
+I_ajusted = cv2.warpPerspective(I_input, M, (width, height))
 
 # OCR com Template Matching
 source_gray = cv2.cvtColor(I_ajusted, cv2.COLOR_BGR2GRAY)
