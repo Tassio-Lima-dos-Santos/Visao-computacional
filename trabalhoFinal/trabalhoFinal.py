@@ -37,40 +37,51 @@ I_template = cv2.imread('./trabalhoFinal/banco_de_imagens/fonte_mercosul.png')
 # ----------------------------------ALGORITMO PRINCIPAL------------------------------------------------
 
 def ALGORITMO_PRINCIPAL():
-    
-
-    # Ajuste de perspectiva usando detecção de bordas e características de contorno
-
+    # Criação do alfabeto das placas Mercosul a partir da imagem de template
     templates = criacaoAlfabeto(I_template, alphabet)
 
+    # Aumento da nitidez para ajudar a capturar bordas mesmo com a iluminação ruim
     I_sharp = aumentoNitidez(I_input, 5, 0.8)
 
+    # Captura os contornos da imagem original
     contours = aquisicaoContornos(I_sharp, t_upper, t_lower, structElemClose, structElemOpen)
 
+    # Primeira tentativa de ajustar a imagem só usando contornos e aproximação poligonal
     I_ajusted = ajustePerspectivaContornosRobusto(I_input, contours)
+
     if I_ajusted is not None:
+        # Se não der erro nessa primeira tentativa de ajuste, o código tenta ler a placa
         found_chars = identificacaoCaracteres(I_ajusted)
         recognized_text = templateMatching(found_chars, templates)
+
         if (len(recognized_text) == 7):
+            # Se ele conseguir ler 7 caracteres, ele supõe que acertou e retorna o texto e a imagem com os 
+            # caracteres destacados
             I_output = marcarCaracteres(I_ajusted, found_chars)
             return (recognized_text, I_output)
         
+        # Caso não tenha lido 7 caracteres, ele tenta aplicar um ajuste usando SIFT e lê novamente
         I_ajusted = ajustePerspectivaSift(I_input)
         found_chars = identificacaoCaracteres(I_ajusted)
         recognized_text = templateMatching(found_chars, templates)
         if (len(recognized_text) == 7):
+            # Caso tenha lido os 7 caracteres, novamente retorna o texto e imagem com os caracteres destacados
             I_output = marcarCaracteres(I_ajusted, found_chars)
             return (recognized_text, I_output)
         
-
+    # Caso tenha dado erro ou ele só não conseguiu ler com o ajuste de aproximação poligonal
+    # ele tenta novamente usando contornos e o minimo retângulo
     I_ajusted = ajustePerspectivaContornos(I_input, contours)
     if I_ajusted is not None:
+        #Caso não tenha dado erro no ajuste, ele tenta ler os caracteres
         found_chars = identificacaoCaracteres(I_ajusted)
         recognized_text = templateMatching(found_chars, templates)
         if (len(recognized_text) == 7):
+            # Se conseguir ler 7 caracteres, retorná-os mais a imagem tratada
             I_output = marcarCaracteres(I_ajusted, found_chars)
             return (recognized_text, I_output)
         
+        # Se não leu os 7 caracteres, novamente aplica SIFT e tenta ler
         I_ajusted = ajustePerspectivaSift(I_input)
         found_chars = identificacaoCaracteres(I_ajusted)
         recognized_text = templateMatching(found_chars, templates)
@@ -78,13 +89,16 @@ def ALGORITMO_PRINCIPAL():
             I_output = marcarCaracteres(I_ajusted, found_chars)
             return (recognized_text, I_output)
 
-    
+    # Caso não tenha conseguido ler os 7 caracteres com nenhum dos métodos anteriores, tenta usar SIFT puro
+    # para ajustar a imagem e a lê
     I_ajusted = ajustePerspectivaSift(I_input)
     found_chars = identificacaoCaracteres(I_ajusted)
     recognized_text = templateMatching(found_chars, templates)
     if (len(recognized_text) == 7):
         I_output = marcarCaracteres(I_ajusted, found_chars)
         return (recognized_text, I_output)
+    
+    # Se nem o SIFT puro funcionou, retorna uma string vazia e a própria imagem inicial
     else:
         return ('', I_input)
 
@@ -413,9 +427,11 @@ ax2.imshow(cv2.cvtColor(I_output, cv2.COLOR_BGR2RGB))
 ax2.set_title('Imagem Tratada')
 
 # Adiciona texto na parte superior da figura inteira
+# Caso recognized_text tenha algo, ele exibe o texto como sendo o número da placa
 if (len(recognized_text)):
     fig.text(0.5, 0.95, f"Placa identificada: {recognized_text}", ha='center', va='center', fontsize=14, fontweight='bold')
 
+# Caso seja vazia, fala que não conseguiu identificar a placa
 else:
     fig.text(0.5, 0.95, f"Placa não identificada", ha='center', va='center', fontsize=14, fontweight='bold')
 
